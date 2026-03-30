@@ -404,6 +404,7 @@ export default function App() {
       setToken(data.token);
       setUser(data.user);
       setAuthEmail(""); setAuthPass(""); setAuthName("");
+      setMode("home");
       // Load cloud progress (merge with local)
       const cloudProgress = await api("/progress");
       setProgress((prev) => {
