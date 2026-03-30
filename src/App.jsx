@@ -30,7 +30,7 @@ function shuffle(arr) {
   return a;
 }
 
-// ── localStorage persistence ───────────────────────────────────────────────
+// ── localStorage persistence (fallback for guests) ─────────────────────────
 const STORAGE_KEY = "czech-study-progress";
 function loadProgress() {
   try {
@@ -38,11 +38,25 @@ function loadProgress() {
     return raw ? JSON.parse(raw) : {};
   } catch { return {}; }
 }
-function saveProgress(data) {
+function saveProgressLocal(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
-// Progress structure: { [questionText]: { correct: number, wrong: number, lastSeen: timestamp } }
+// ── API helpers ────────────────────────────────────────────────────────────
+function getToken() {
+  try { return localStorage.getItem("czech-study-token"); } catch { return null; }
+}
+function setToken(token) {
+  try { if (token) localStorage.setItem("czech-study-token", token); else localStorage.removeItem("czech-study-token"); } catch {}
+}
+async function api(path, opts = {}) {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+  const res = await fetch(`/api${path}`, { ...opts, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
 
 // ── Czech vocabulary mini-glossary per question ────────────────────────────
 const VOCAB = {
@@ -146,6 +160,31 @@ export default function App() {
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [progress, setProgress] = useState(loadProgress);
 
+  // Auth state
+  const [user, setUser] = useState(null);
+  const [authMode, setAuthMode] = useState("login"); // login | register
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPass, setAuthPass] = useState("");
+  const [authName, setAuthName] = useState("");
+  const [authError, setAuthError] = useState("");
+  const [authLoading, setAuthLoading] = useState(false);
+
+  // Session history
+  const [sessions, setSessions] = useState([]);
+
+  // Check for existing token on mount
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      api("/me").then((u) => {
+        setUser(u);
+        // Load cloud progress
+        api("/progress").then((p) => { setProgress(p); saveProgressLocal(p); });
+        api("/sessions").then(setSessions);
+      }).catch(() => setToken(null));
+    }
+  }, []);
+
   // Flashcard state
   const [deck, setDeck] = useState([]);
   const [cardIdx, setCardIdx] = useState(0);
@@ -217,10 +256,13 @@ export default function App() {
           lastSeen: Date.now(),
         },
       };
-      saveProgress(updated);
+      saveProgressLocal(updated);
+      if (user) {
+        api("/progress", { method: "POST", body: JSON.stringify({ question: questionText, correct: isCorrect, wrong: !isCorrect, lastSeen: Date.now() }) }).catch(() => {});
+      }
       return updated;
     });
-  }, []);
+  }, [user]);
 
   const startFlashcards = () => {
     const d = buildSmartDeck();
@@ -307,6 +349,15 @@ export default function App() {
     setQuizAnswers((prev) => [...prev, { correct: isCorrect, question: currentQuiz.q, picked: opt, answer: currentQuiz.correct }]);
   };
 
+  const saveSession = useCallback((sessionMode, finalScore, total) => {
+    const passed = finalScore >= (total === 30 ? 20 : Math.ceil(total * 0.67));
+    if (user) {
+      api("/sessions", { method: "POST", body: JSON.stringify({ mode: sessionMode, score: finalScore, total, passed }) })
+        .then(() => api("/sessions").then(setSessions))
+        .catch(() => {});
+    }
+  }, [user]);
+
   const nextQuiz = () => {
     if (quizIdx < quizCards.length - 1) {
       setQuizIdx(quizIdx + 1);
@@ -315,6 +366,8 @@ export default function App() {
       setShowHint(false);
     } else {
       setExamActive(false);
+      const finalScore = [...quizAnswers, { correct: quizSelected === currentQuiz.correct }].filter((a) => a.correct).length;
+      saveSession(quizCards.length === 30 ? "exam" : "quiz", score, quizCards.length);
       setMode("results");
     }
   };
@@ -336,6 +389,41 @@ export default function App() {
     });
     return stats;
   }, [progress]);
+
+  // Auth handlers
+  const handleAuth = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const endpoint = authMode === "register" ? "/register" : "/login";
+      const body = authMode === "register"
+        ? { email: authEmail, password: authPass, displayName: authName }
+        : { email: authEmail, password: authPass };
+      const data = await api(endpoint, { method: "POST", body: JSON.stringify(body) });
+      setToken(data.token);
+      setUser(data.user);
+      setAuthEmail(""); setAuthPass(""); setAuthName("");
+      // Load cloud progress (merge with local)
+      const cloudProgress = await api("/progress");
+      setProgress((prev) => {
+        const merged = { ...prev, ...cloudProgress };
+        saveProgressLocal(merged);
+        return merged;
+      });
+      api("/sessions").then(setSessions);
+    } catch (err) {
+      setAuthError(err.message);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    setToken(null);
+    setUser(null);
+    setSessions([]);
+  };
 
   // Common styles
   const s = {
@@ -387,6 +475,20 @@ export default function App() {
     return (
       <div style={s.app}>
         <div style={s.header}>
+          {/* Account area */}
+          <div style={{ position: "absolute", top: 16, right: 16, textAlign: "right" }}>
+            {user ? (
+              <div style={{ fontSize: "14px" }}>
+                <span style={{ color: t.textMuted }}>{user.displayName || user.email}</span>
+                <button onClick={handleLogout}
+                  style={{ ...s.backBtn, fontSize: "13px", color: t.errorText, marginLeft: "8px" }}>Logout</button>
+              </div>
+            ) : (
+              <button onClick={() => setMode("auth")}
+                style={{ ...s.backBtn, fontSize: "14px", color: "#1a56db" }}>Sign in</button>
+            )}
+          </div>
+
           <div style={{ fontSize: "44px", lineHeight: 1, marginBottom: "8px" }}>🇨🇿</div>
           <h1 style={s.title}>Czech Citizenship Exam</h1>
           <p style={s.subtitle}>
@@ -468,7 +570,7 @@ export default function App() {
                 ) : (
                   <span style={{ fontSize: "11px" }}>
                     <span style={{ color: t.errorText, marginRight: "8px" }}>Reset all progress?</span>
-                    <button onClick={() => { saveProgress({}); setProgress({}); setConfirmReset(false); }}
+                    <button onClick={() => { saveProgressLocal({}); setProgress({}); setConfirmReset(false); }}
                       style={{ ...s.backBtn, fontSize: "11px", color: t.errorText, fontWeight: 700 }}>Yes</button>
                     <button onClick={() => setConfirmReset(false)}
                       style={{ ...s.backBtn, fontSize: "11px", color: t.textMuted }}>No</button>
@@ -523,6 +625,37 @@ export default function App() {
               </div>
             );
           })}
+
+          {/* Session history */}
+          {sessions.length > 0 && (
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ fontSize: "18px", fontWeight: 700, color: t.textGold, marginBottom: "12px" }}>Session History</div>
+              <div style={{ background: t.card, border: `1px solid ${t.cardBorder}`, borderRadius: "12px", overflow: "hidden" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${t.cardBorder}`, textAlign: "left" }}>
+                      <th style={{ padding: "10px 14px", color: t.textMuted, fontWeight: 600 }}>Date</th>
+                      <th style={{ padding: "10px 14px", color: t.textMuted, fontWeight: 600 }}>Mode</th>
+                      <th style={{ padding: "10px 14px", color: t.textMuted, fontWeight: 600 }}>Score</th>
+                      <th style={{ padding: "10px 14px", color: t.textMuted, fontWeight: 600 }}>Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sessions.slice(0, 10).map((sess) => (
+                      <tr key={sess.id} style={{ borderBottom: `1px solid ${t.cardBorder}` }}>
+                        <td style={{ padding: "8px 14px", color: t.text }}>{new Date(sess.created_at).toLocaleDateString()}</td>
+                        <td style={{ padding: "8px 14px", color: t.text, textTransform: "capitalize" }}>{sess.mode}</td>
+                        <td style={{ padding: "8px 14px", color: t.text }}>{sess.score}/{sess.total}</td>
+                        <td style={{ padding: "8px 14px", color: sess.passed ? t.successText : t.errorText, fontWeight: 600 }}>
+                          {sess.passed ? "Pass" : "Fail"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {/* Action buttons */}
           <div style={{ display: "flex", gap: "12px", justifyContent: "center", marginTop: "28px", flexWrap: "wrap" }}>
@@ -843,6 +976,68 @@ export default function App() {
             {!isExam && <button onClick={startQuiz} style={s.actionBtn("#7c3aed")}>🔄 New Quiz</button>}
             <button onClick={startFlashcards} style={s.actionBtn("#1a56db")}>📚 Flashcards</button>
             <button onClick={() => setMode("home")} style={{ ...s.actionBtn("#555"), boxShadow: "none" }}>← Home</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── AUTH SCREEN ─────────────────────────────────────────────────────────
+  if (mode === "auth") {
+    const inputStyle = {
+      width: "100%", padding: "12px 16px", borderRadius: "10px",
+      border: `1px solid ${t.cardBorder}`, background: t.card,
+      color: t.text, fontSize: "16px", boxSizing: "border-box",
+    };
+    return (
+      <div style={{ ...s.app, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "32px 16px" }}>
+        <div style={{ maxWidth: "380px", width: "100%" }}>
+          <div style={{ textAlign: "center", marginBottom: "24px" }}>
+            <div style={{ fontSize: "40px", marginBottom: "8px" }}>🇨🇿</div>
+            <h2 style={{ fontSize: "24px", color: t.textGold, margin: "0 0 4px" }}>
+              {authMode === "login" ? "Sign In" : "Create Account"}
+            </h2>
+            <p style={{ fontSize: "14px", color: t.textMuted, margin: 0 }}>
+              {authMode === "login" ? "Sign in to sync progress across devices" : "Create an account to track your progress"}
+            </p>
+          </div>
+
+          <form onSubmit={handleAuth} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {authMode === "register" && (
+              <input type="text" placeholder="Display name (optional)" value={authName}
+                onChange={(e) => setAuthName(e.target.value)} style={inputStyle} />
+            )}
+            <input type="email" placeholder="Email" value={authEmail} required
+              onChange={(e) => setAuthEmail(e.target.value)} style={inputStyle} />
+            <input type="password" placeholder="Password (min 6 characters)" value={authPass} required minLength={6}
+              onChange={(e) => setAuthPass(e.target.value)} style={inputStyle} />
+
+            {authError && (
+              <div style={{ color: t.errorText, fontSize: "14px", textAlign: "center" }}>{authError}</div>
+            )}
+
+            <button type="submit" disabled={authLoading} style={{
+              ...s.actionBtn("#1a56db"), width: "100%", opacity: authLoading ? 0.6 : 1,
+            }}>
+              {authLoading ? "..." : (authMode === "login" ? "Sign In" : "Create Account")}
+            </button>
+          </form>
+
+          <div style={{ textAlign: "center", marginTop: "16px", fontSize: "14px" }}>
+            <span style={{ color: t.textMuted }}>
+              {authMode === "login" ? "No account? " : "Already have an account? "}
+            </span>
+            <button onClick={() => { setAuthMode(authMode === "login" ? "register" : "login"); setAuthError(""); }}
+              style={{ ...s.backBtn, fontSize: "14px", color: "#1a56db", display: "inline" }}>
+              {authMode === "login" ? "Sign up" : "Sign in"}
+            </button>
+          </div>
+
+          <div style={{ textAlign: "center", marginTop: "20px" }}>
+            <button onClick={() => setMode("home")}
+              style={{ ...s.backBtn, fontSize: "14px", color: t.textMuted }}>
+              ← Continue as guest
+            </button>
           </div>
         </div>
       </div>
