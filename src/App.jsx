@@ -126,6 +126,62 @@ function getVocabForQuestion(questionText) {
   return matches;
 }
 
+// Build a lookup that matches word stems (strips common Czech suffixes)
+const VOCAB_LOWER = {};
+for (const [cz, en] of Object.entries(VOCAB)) {
+  VOCAB_LOWER[cz.toLowerCase()] = en;
+}
+
+function lookupWord(word) {
+  const w = word.toLowerCase().replace(/[.,?!:;()„""/–—]/g, "");
+  if (!w) return null;
+  if (VOCAB_LOWER[w]) return VOCAB_LOWER[w];
+  // Try stripping common Czech endings to match dictionary forms
+  const suffixes = ["ů", "ům", "ech", "emi", "ami", "ách", "ích", "ové", "em", "ou", "ě", "ím", "ům", "ý", "á", "é", "ho", "mu", "mi", "y", "i", "u"];
+  for (const s of suffixes) {
+    if (w.length > s.length + 2 && w.endsWith(s)) {
+      const stem = w.slice(0, -s.length);
+      if (VOCAB_LOWER[stem]) return VOCAB_LOWER[stem];
+    }
+  }
+  return null;
+}
+
+function TranslatedText({ text, style }) {
+  // Split text into tokens (words + separators), preserving whitespace and punctuation
+  const tokens = text.split(/(\s+)/);
+  return (
+    <span style={style}>
+      {tokens.map((token, i) => {
+        if (/^\s+$/.test(token)) return token;
+        const meaning = lookupWord(token);
+        if (!meaning) return <span key={i}>{token}</span>;
+        return (
+          <span key={i} style={{ position: "relative", borderBottom: "1.5px dotted #4338ca", cursor: "help" }}
+            title={meaning}
+            onClick={(e) => {
+              // For mobile: toggle a tooltip via dataset
+              const el = e.currentTarget;
+              const tip = el.querySelector(".inline-tip");
+              if (tip) { tip.remove(); return; }
+              const d = document.createElement("span");
+              d.className = "inline-tip";
+              d.textContent = meaning;
+              Object.assign(d.style, {
+                position: "absolute", bottom: "calc(100% + 4px)", left: "50%", transform: "translateX(-50%)",
+                background: "#4338ca", color: "#fff", fontSize: "12px", padding: "3px 8px",
+                borderRadius: "6px", whiteSpace: "nowrap", zIndex: "10", pointerEvents: "none",
+              });
+              el.appendChild(d);
+              setTimeout(() => d.remove(), 2000);
+            }}
+          >{token}</span>
+        );
+      })}
+    </span>
+  );
+}
+
 // ── Theme (light only) ─────────────────────────────────────────────────────
 const t = {
   bg: "#f5f3f0",
@@ -192,6 +248,7 @@ export default function App() {
   const [known, setKnown] = useState(new Set());
   const [unknown, setUnknown] = useState(new Set());
   const [showVocab, setShowVocab] = useState(false);
+  const [showInlineTranslation, setShowInlineTranslation] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
 
   // Quiz state
@@ -711,7 +768,7 @@ export default function App() {
                   Question — tap to reveal
                 </div>
                 <div style={{ fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 600, color: t.textGold, lineHeight: 1.45 }}>
-                  {currentCard.q}
+                  {showInlineTranslation ? <TranslatedText text={currentCard.q} /> : currentCard.q}
                 </div>
               </>
             ) : (
@@ -732,9 +789,17 @@ export default function App() {
             )}
           </div>
 
+          {/* Inline translation toggle */}
+          <div style={{ marginTop: "10px", textAlign: "center" }}>
+            <button onClick={() => setShowInlineTranslation(!showInlineTranslation)}
+              style={{ ...s.backBtn, fontSize: "14px", color: showInlineTranslation ? t.successText : t.vocabText, width: "100%", textAlign: "center" }}>
+              {showInlineTranslation ? "✓ Word translations ON — hover/tap words" : "🔤 Turn on word translations"}
+            </button>
+          </div>
+
           {/* Vocab toggle */}
           {vocab.length > 0 && (
-            <div style={{ marginTop: "10px" }}>
+            <div style={{ marginTop: "6px" }}>
               <button onClick={(e) => { e.stopPropagation(); setShowVocab(!showVocab); }}
                 style={{ ...s.backBtn, fontSize: "14px", color: t.vocabText, width: "100%", textAlign: "center" }}>
                 {showVocab ? "Hide vocabulary" : "📖 Show Czech vocabulary"}
@@ -838,9 +903,19 @@ export default function App() {
           {/* Question */}
           <div style={{ background: t.card, borderRadius: "14px", padding: "20px", marginBottom: "12px", border: `1px solid ${t.cardBorder}` }}>
             <div style={{ fontSize: "clamp(17px, 2.5vw, 22px)", color: t.textGold, fontWeight: 600, lineHeight: 1.5 }}>
-              {currentQuiz.q}
+              {showInlineTranslation ? <TranslatedText text={currentQuiz.q} /> : currentQuiz.q}
             </div>
           </div>
+
+          {/* Inline translation toggle */}
+          {!quizRevealed && (
+            <div style={{ marginBottom: "4px", textAlign: "center" }}>
+              <button onClick={() => setShowInlineTranslation(!showInlineTranslation)}
+                style={{ ...s.backBtn, fontSize: "14px", color: showInlineTranslation ? t.successText : t.vocabText, width: "100%", textAlign: "center" }}>
+                {showInlineTranslation ? "✓ Word translations ON — hover/tap words" : "🔤 Turn on word translations"}
+              </button>
+            </div>
+          )}
 
           {/* Vocab */}
           {vocab.length > 0 && !quizRevealed && (
@@ -890,7 +965,7 @@ export default function App() {
                   fontSize: "clamp(15px, 2vw, 17px)", transition: "all 0.2s", lineHeight: 1.5,
                 }}>
                   <span style={{ opacity: 0.4, marginRight: "8px" }}>{String.fromCharCode(65 + i)})</span>
-                  {opt}
+                  {showInlineTranslation && !quizRevealed ? <TranslatedText text={opt} /> : opt}
                   {quizRevealed && opt === currentQuiz.correct && " ✓"}
                   {quizRevealed && opt === quizSelected && opt !== currentQuiz.correct && " ✗"}
                 </button>
