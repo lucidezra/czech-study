@@ -112,58 +112,31 @@ function getVocabForQuestion(questionText) {
   return matches;
 }
 
-// ── Theme ──────────────────────────────────────────────────────────────────
-const THEMES = {
-  dark: {
-    bg: "linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)",
-    card: "rgba(255,255,255,0.07)",
-    cardBorder: "rgba(255,255,255,0.12)",
-    text: "#f0ece4",
-    textGold: "#f5e6c8",
-    textMuted: "#a89b8c",
-    textDim: "#6b6456",
-    btnBg: "rgba(255,255,255,0.08)",
-    btnBorder: "rgba(255,255,255,0.15)",
-    btnText: "#d4c9b8",
-    successBg: "rgba(52,211,153,0.15)",
-    successBorder: "#34d399",
-    successText: "#34d399",
-    errorBg: "rgba(248,113,113,0.15)",
-    errorBorder: "#f87171",
-    errorText: "#f87171",
-    hintBg: "rgba(251,191,36,0.1)",
-    hintBorder: "rgba(251,191,36,0.3)",
-    hintText: "#fbbf24",
-    progressBg: "rgba(255,255,255,0.1)",
-    vocabBg: "rgba(99,102,241,0.1)",
-    vocabBorder: "rgba(99,102,241,0.3)",
-    vocabText: "#a5b4fc",
-  },
-  light: {
-    bg: "linear-gradient(135deg, #f8f6f3 0%, #e8e4df 50%, #f0ece7 100%)",
-    card: "rgba(255,255,255,0.85)",
-    cardBorder: "rgba(0,0,0,0.1)",
-    text: "#1a1a2e",
-    textGold: "#4a3728",
-    textMuted: "#6b5e50",
-    textDim: "#9a8d7f",
-    btnBg: "rgba(0,0,0,0.04)",
-    btnBorder: "rgba(0,0,0,0.12)",
-    btnText: "#4a3728",
-    successBg: "rgba(22,163,74,0.1)",
-    successBorder: "#16a34a",
-    successText: "#15803d",
-    errorBg: "rgba(220,38,38,0.1)",
-    errorBorder: "#dc2626",
-    errorText: "#dc2626",
-    hintBg: "rgba(234,179,8,0.1)",
-    hintBorder: "rgba(234,179,8,0.3)",
-    hintText: "#a16207",
-    progressBg: "rgba(0,0,0,0.08)",
-    vocabBg: "rgba(99,102,241,0.08)",
-    vocabBorder: "rgba(99,102,241,0.2)",
-    vocabText: "#4f46e5",
-  },
+// ── Theme (light only) ─────────────────────────────────────────────────────
+const t = {
+  bg: "#f5f3f0",
+  card: "#ffffff",
+  cardBorder: "#e0dbd5",
+  text: "#2c2418",
+  textGold: "#3d2e1e",
+  textMuted: "#6b5e50",
+  textDim: "#9a8d7f",
+  btnBg: "#f0ece7",
+  btnBorder: "#d5cfc7",
+  btnText: "#3d2e1e",
+  successBg: "rgba(22,163,74,0.1)",
+  successBorder: "#16a34a",
+  successText: "#15803d",
+  errorBg: "rgba(220,38,38,0.08)",
+  errorBorder: "#dc2626",
+  errorText: "#b91c1c",
+  hintBg: "rgba(234,179,8,0.1)",
+  hintBorder: "rgba(202,138,4,0.3)",
+  hintText: "#92400e",
+  progressBg: "#e5e0da",
+  vocabBg: "rgba(79,70,229,0.06)",
+  vocabBorder: "rgba(79,70,229,0.15)",
+  vocabText: "#4338ca",
 };
 
 // ── Main App ───────────────────────────────────────────────────────────────
@@ -171,11 +144,7 @@ export default function App() {
   const [mode, setMode] = useState("home");
   const [selectedArea, setSelectedArea] = useState(null);
   const [selectedTopic, setSelectedTopic] = useState(null);
-  const [theme, setTheme] = useState(() => {
-    try { return localStorage.getItem("czech-study-theme") || "dark"; } catch { return "dark"; }
-  });
   const [progress, setProgress] = useState(loadProgress);
-  const t = THEMES[theme];
 
   // Flashcard state
   const [deck, setDeck] = useState([]);
@@ -198,11 +167,6 @@ export default function App() {
   // Exam sim state
   const [examTimer, setExamTimer] = useState(45 * 60);
   const [examActive, setExamActive] = useState(false);
-
-  // Save theme
-  useEffect(() => {
-    try { localStorage.setItem("czech-study-theme", theme); } catch {}
-  }, [theme]);
 
   // Exam timer
   useEffect(() => {
@@ -378,35 +342,35 @@ export default function App() {
     app: {
       minHeight: "100vh", background: t.bg,
       fontFamily: "'Segoe UI', system-ui, -apple-system, sans-serif",
-      color: t.text, padding: 0,
+      color: t.text, padding: 0, fontSize: "17px", lineHeight: 1.5,
     },
-    header: { padding: "24px 24px 0", textAlign: "center" },
+    header: { padding: "28px 24px 0", textAlign: "center" },
     title: {
-      fontSize: "clamp(22px, 4vw, 36px)", fontWeight: 700,
-      color: t.textGold, margin: "0 0 4px", letterSpacing: "0.02em",
+      fontSize: "clamp(26px, 5vw, 42px)", fontWeight: 700,
+      color: t.textGold, margin: "0 0 6px", letterSpacing: "0.02em",
     },
     subtitle: {
-      fontSize: "13px", color: t.textMuted, letterSpacing: "0.1em",
-      textTransform: "uppercase", margin: "0 0 20px",
+      fontSize: "15px", color: t.textMuted, letterSpacing: "0.08em",
+      textTransform: "uppercase", margin: "0 0 24px",
     },
     navBtn: (active) => ({
-      background: active ? `${t.textGold}22` : t.btnBg,
-      border: `1px solid ${active ? t.textGold : t.btnBorder}`,
-      color: active ? t.textGold : t.btnText,
-      padding: "6px 14px", borderRadius: "20px", cursor: "pointer",
-      fontSize: "12px", letterSpacing: "0.06em", transition: "all 0.2s",
-      whiteSpace: "nowrap",
+      background: active ? "#3d2e1e" : t.btnBg,
+      border: `1px solid ${active ? "#3d2e1e" : t.btnBorder}`,
+      color: active ? "#fff" : t.btnText,
+      padding: "8px 18px", borderRadius: "20px", cursor: "pointer",
+      fontSize: "14px", letterSpacing: "0.04em", transition: "all 0.2s",
+      whiteSpace: "nowrap", fontWeight: active ? 600 : 400,
     }),
     actionBtn: (color) => ({
       background: `linear-gradient(135deg, ${color}, ${color}cc)`,
       color: "#fff", border: "none", borderRadius: "12px",
-      padding: "14px 32px", fontSize: "15px", fontWeight: 600,
+      padding: "16px 36px", fontSize: "17px", fontWeight: 600,
       cursor: "pointer", boxShadow: `0 4px 20px ${color}44`,
-      transition: "transform 0.15s", minWidth: "140px",
+      transition: "transform 0.15s", minWidth: "150px",
     }),
     backBtn: {
       background: "none", border: "none", color: t.textMuted,
-      cursor: "pointer", fontSize: "14px", padding: "4px 8px",
+      cursor: "pointer", fontSize: "16px", padding: "4px 8px",
     },
   };
 
@@ -423,16 +387,7 @@ export default function App() {
     return (
       <div style={s.app}>
         <div style={s.header}>
-          {/* Theme toggle */}
-          <div style={{ position: "absolute", top: 16, right: 16 }}>
-            <button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              style={{ ...s.backBtn, fontSize: "20px", padding: "4px 8px" }}
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
-              {theme === "dark" ? "☀️" : "🌙"}
-            </button>
-          </div>
-
-          <div style={{ fontSize: "40px", lineHeight: 1, marginBottom: "6px" }}>🇨🇿</div>
+          <div style={{ fontSize: "44px", lineHeight: 1, marginBottom: "8px" }}>🇨🇿</div>
           <h1 style={s.title}>Czech Citizenship Exam</h1>
           <p style={s.subtitle}>
             {ALL_CARDS.length} Questions · 30 Topics · B1 Level
@@ -467,40 +422,40 @@ export default function App() {
         {totalSeen > 0 && (
           <div style={{ maxWidth: "900px", margin: "0 auto 20px", padding: "0 24px" }}>
             <div style={{ background: t.card, border: `1px solid ${t.cardBorder}`, borderRadius: "16px", padding: "16px 20px" }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: t.textGold, marginBottom: "12px" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: t.textGold, marginBottom: "12px" }}>
                 Your Progress
               </div>
-              <div style={{ display: "flex", gap: "20px", flexWrap: "wrap", marginBottom: "12px" }}>
+              <div style={{ display: "flex", gap: "24px", flexWrap: "wrap", marginBottom: "14px" }}>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: t.textGold }}>{totalSeen}</div>
-                  <div style={{ fontSize: "11px", color: t.textMuted }}>Questions Seen</div>
+                  <div style={{ fontSize: "28px", fontWeight: 700, color: t.textGold }}>{totalSeen}</div>
+                  <div style={{ fontSize: "13px", color: t.textMuted }}>Questions Seen</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: t.textGold }}>{ALL_CARDS.length - totalSeen}</div>
-                  <div style={{ fontSize: "11px", color: t.textMuted }}>Remaining</div>
+                  <div style={{ fontSize: "28px", fontWeight: 700, color: t.textGold }}>{ALL_CARDS.length - totalSeen}</div>
+                  <div style={{ fontSize: "13px", color: t.textMuted }}>Remaining</div>
                 </div>
                 <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "24px", fontWeight: 700, color: t.successText }}>
+                  <div style={{ fontSize: "28px", fontWeight: 700, color: t.successText }}>
                     {Math.round((totalSeen / ALL_CARDS.length) * 100)}%
                   </div>
-                  <div style={{ fontSize: "11px", color: t.textMuted }}>Coverage</div>
+                  <div style={{ fontSize: "13px", color: t.textMuted }}>Coverage</div>
                 </div>
               </div>
               {/* Topic mastery bars */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "6px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "8px" }}>
                 {ALL_DATA.map((area) =>
                   area.topics.map((topic) => {
                     const st = topicStats[topic.name];
                     const pct = Math.round(st.mastery * 100);
                     return (
                       <div key={topic.name} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                        <div style={{ flex: 1, fontSize: "11px", color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ flex: 1, fontSize: "13px", color: t.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {topic.nameEn}
                         </div>
                         <div style={{ width: "60px", height: "6px", background: t.progressBg, borderRadius: "3px", overflow: "hidden", flexShrink: 0 }}>
                           <div style={{ width: `${pct}%`, height: "100%", background: area.color, borderRadius: "3px", transition: "width 0.3s" }} />
                         </div>
-                        <div style={{ fontSize: "10px", color: t.textDim, width: "28px", textAlign: "right" }}>{pct}%</div>
+                        <div style={{ fontSize: "12px", color: t.textDim, width: "28px", textAlign: "right" }}>{pct}%</div>
                       </div>
                     );
                   })
@@ -530,33 +485,34 @@ export default function App() {
             if (selectedArea !== null && selectedArea !== ai) return null;
             return (
               <div key={ai} style={{ marginBottom: "20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
-                  <span style={{ fontSize: "22px" }}>{area.icon}</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "12px" }}>
+                  <span style={{ fontSize: "26px" }}>{area.icon}</span>
                   <div>
-                    <div style={{ fontSize: "16px", fontWeight: 700, color: t.textGold }}>{area.area}</div>
-                    <div style={{ fontSize: "11px", color: t.textMuted }}>
+                    <div style={{ fontSize: "20px", fontWeight: 700, color: t.textGold }}>{area.area}</div>
+                    <div style={{ fontSize: "14px", color: t.textMuted }}>
                       {area.areaEn} · {area.topics.reduce((s, tp) => s + tp.questions.length, 0)} questions
                     </div>
                   </div>
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "10px" }}>
                   {area.topics.map((topic, ti) => {
                     if (selectedTopic !== null && selectedTopic !== ti) return null;
                     const st = topicStats[topic.name];
                     return (
                       <div key={ti} style={{
-                        background: t.card, border: `1px solid ${area.color}33`,
-                        borderRadius: "10px", padding: "12px", cursor: "default",
+                        background: t.bg, borderLeft: `3px solid ${area.color}`,
+                        borderRadius: "4px", padding: "10px 14px", cursor: "default",
+                        userSelect: "none",
                       }}>
-                        <div style={{ fontSize: "12px", fontWeight: 600, color: t.text, marginBottom: "2px" }}>{topic.name}</div>
-                        <div style={{ fontSize: "10px", color: t.textMuted, marginBottom: "6px" }}>{topic.nameEn}</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                          <span style={{ fontSize: "10px", color: area.color, background: `${area.color}18`, padding: "2px 6px", borderRadius: "8px" }}>
-                            {topic.questions.length} Qs
+                        <div style={{ fontSize: "15px", fontWeight: 600, color: t.text, marginBottom: "2px" }}>{topic.name}</div>
+                        <div style={{ fontSize: "13px", color: t.textMuted, marginBottom: "4px" }}>{topic.nameEn}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "12px", color: t.textDim }}>
+                            {topic.questions.length} questions
                           </span>
                           {st.seen > 0 && (
-                            <span style={{ fontSize: "10px", color: t.successText }}>
-                              {st.seen}/{st.total} seen
+                            <span style={{ fontSize: "12px", color: t.successText }}>
+                              · {st.seen}/{st.total} seen
                             </span>
                           )}
                         </div>
@@ -574,7 +530,7 @@ export default function App() {
             <button onClick={startQuiz} style={s.actionBtn("#7c3aed")}>🎯 Quiz (20)</button>
             <button onClick={startExam} style={s.actionBtn("#9f1239")}>📝 Exam Sim</button>
           </div>
-          <p style={{ textAlign: "center", color: t.textDim, fontSize: "11px", marginTop: "10px" }}>
+          <p style={{ textAlign: "center", color: t.textDim, fontSize: "14px", marginTop: "12px" }}>
             {filteredCount} cards selected · Quiz uses 20 · Exam simulates real test (30 Qs, 45 min, pass: 20/30)
           </p>
         </div>
@@ -593,10 +549,10 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <button onClick={() => setMode("home")} style={s.backBtn}>← Back</button>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "13px", color: t.textMuted }}>{cardIdx + 1} / {deck.length}</div>
-              <div style={{ fontSize: "10px", color: t.textDim }}>{currentCard.topicEn}</div>
+              <div style={{ fontSize: "16px", color: t.textMuted }}>{cardIdx + 1} / {deck.length}</div>
+              <div style={{ fontSize: "13px", color: t.textDim }}>{currentCard.topicEn}</div>
             </div>
-            <div style={{ fontSize: "12px" }}>
+            <div style={{ fontSize: "15px" }}>
               <span style={{ color: t.successText }}>✓{known.size}</span>{" · "}
               <span style={{ color: t.errorText }}>✗{unknown.size}</span>
             </div>
@@ -617,23 +573,23 @@ export default function App() {
           }}>
             {!flipped ? (
               <>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: "16px" }}>
+                <div style={{ fontSize: "13px", letterSpacing: "0.12em", color: t.textMuted, textTransform: "uppercase", marginBottom: "16px" }}>
                   Question — tap to reveal
                 </div>
-                <div style={{ fontSize: "clamp(15px, 2.8vw, 20px)", fontWeight: 600, color: t.textGold, lineHeight: 1.45 }}>
+                <div style={{ fontSize: "clamp(18px, 3vw, 24px)", fontWeight: 600, color: t.textGold, lineHeight: 1.45 }}>
                   {currentCard.q}
                 </div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: "10px", letterSpacing: "0.12em", color: currentCard.areaColor, textTransform: "uppercase", marginBottom: "16px" }}>
+                <div style={{ fontSize: "13px", letterSpacing: "0.12em", color: currentCard.areaColor, textTransform: "uppercase", marginBottom: "16px" }}>
                   Correct Answer
                 </div>
-                <div style={{ fontSize: "clamp(16px, 3vw, 24px)", fontWeight: 700, color: t.successText, marginBottom: "12px", lineHeight: 1.3 }}>
+                <div style={{ fontSize: "clamp(20px, 3.5vw, 28px)", fontWeight: 700, color: t.successText, marginBottom: "12px", lineHeight: 1.3 }}>
                   {currentCard.correct}
                 </div>
                 {/* Show all options */}
-                <div style={{ fontSize: "12px", color: t.textMuted, lineHeight: 1.6, marginTop: "4px" }}>
+                <div style={{ fontSize: "14px", color: t.textMuted, lineHeight: 1.7, marginTop: "4px" }}>
                   {currentCard.options.filter((o) => o !== currentCard.correct).map((o, i) => (
                     <div key={i} style={{ opacity: 0.6 }}>✗ {o}</div>
                   ))}
@@ -646,14 +602,14 @@ export default function App() {
           {vocab.length > 0 && (
             <div style={{ marginTop: "10px" }}>
               <button onClick={(e) => { e.stopPropagation(); setShowVocab(!showVocab); }}
-                style={{ ...s.backBtn, fontSize: "11px", color: t.vocabText, width: "100%", textAlign: "center" }}>
+                style={{ ...s.backBtn, fontSize: "14px", color: t.vocabText, width: "100%", textAlign: "center" }}>
                 {showVocab ? "Hide vocabulary" : "📖 Show Czech vocabulary"}
               </button>
               {showVocab && (
-                <div style={{ background: t.vocabBg, border: `1px solid ${t.vocabBorder}`, borderRadius: "10px", padding: "10px 14px", marginTop: "6px" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ background: t.vocabBg, border: `1px solid ${t.vocabBorder}`, borderRadius: "10px", padding: "12px 16px", marginTop: "6px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                     {vocab.map((v, i) => (
-                      <span key={i} style={{ fontSize: "12px", color: t.vocabText }}>
+                      <span key={i} style={{ fontSize: "14px", color: t.vocabText }}>
                         <strong>{v.cz}</strong> = {v.en}
                       </span>
                     ))}
@@ -667,14 +623,14 @@ export default function App() {
           {flipped ? (
             <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
               <button onClick={() => markCard(false)} style={{
-                flex: 1, padding: "12px", borderRadius: "10px",
+                flex: 1, padding: "14px", borderRadius: "10px",
                 border: `1px solid ${t.errorBorder}44`, background: t.errorBg,
-                color: t.errorText, cursor: "pointer", fontSize: "14px", fontWeight: 600,
+                color: t.errorText, cursor: "pointer", fontSize: "16px", fontWeight: 600,
               }}>✗ Still learning</button>
               <button onClick={() => markCard(true)} style={{
-                flex: 1, padding: "12px", borderRadius: "10px",
+                flex: 1, padding: "14px", borderRadius: "10px",
                 border: `1px solid ${t.successBorder}44`, background: t.successBg,
-                color: t.successText, cursor: "pointer", fontSize: "14px", fontWeight: 600,
+                color: t.successText, cursor: "pointer", fontSize: "16px", fontWeight: 600,
               }}>✓ Got it!</button>
             </div>
           ) : (
@@ -725,15 +681,15 @@ export default function App() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
             <button onClick={() => { setExamActive(false); setMode("home"); }} style={s.backBtn}>← Exit</button>
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "13px", color: t.textGold, fontWeight: 600 }}>
+              <div style={{ fontSize: "16px", color: t.textGold, fontWeight: 600 }}>
                 {isExam ? "EXAM" : "QUIZ"} · {quizIdx + 1} / {quizCards.length}
               </div>
-              <div style={{ fontSize: "10px", color: t.textMuted }}>{currentQuiz.topicEn || currentQuiz.topic}</div>
+              <div style={{ fontSize: "13px", color: t.textMuted }}>{currentQuiz.topicEn || currentQuiz.topic}</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "13px", color: t.successText, fontWeight: 600 }}>{score} pts</div>
+              <div style={{ fontSize: "16px", color: t.successText, fontWeight: 600 }}>{score} pts</div>
               {isExam && (
-                <div style={{ fontSize: "11px", color: examTimer < 300 ? t.errorText : t.textMuted, fontWeight: examTimer < 300 ? 700 : 400 }}>
+                <div style={{ fontSize: "14px", color: examTimer < 300 ? t.errorText : t.textMuted, fontWeight: examTimer < 300 ? 700 : 400 }}>
                   ⏱ {formatTime(examTimer)}
                 </div>
               )}
@@ -747,7 +703,7 @@ export default function App() {
 
           {/* Question */}
           <div style={{ background: t.card, borderRadius: "14px", padding: "20px", marginBottom: "12px", border: `1px solid ${t.cardBorder}` }}>
-            <div style={{ fontSize: "clamp(14px, 2.2vw, 18px)", color: t.textGold, fontWeight: 600, lineHeight: 1.5 }}>
+            <div style={{ fontSize: "clamp(17px, 2.5vw, 22px)", color: t.textGold, fontWeight: 600, lineHeight: 1.5 }}>
               {currentQuiz.q}
             </div>
           </div>
@@ -756,14 +712,14 @@ export default function App() {
           {vocab.length > 0 && !quizRevealed && (
             <div style={{ marginBottom: "8px" }}>
               <button onClick={() => setShowVocab(!showVocab)}
-                style={{ ...s.backBtn, fontSize: "11px", color: t.vocabText, width: "100%", textAlign: "center" }}>
+                style={{ ...s.backBtn, fontSize: "14px", color: t.vocabText, width: "100%", textAlign: "center" }}>
                 {showVocab ? "Hide vocabulary" : "📖 Vocabulary help"}
               </button>
               {showVocab && (
-                <div style={{ background: t.vocabBg, border: `1px solid ${t.vocabBorder}`, borderRadius: "10px", padding: "8px 12px", marginTop: "4px" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                <div style={{ background: t.vocabBg, border: `1px solid ${t.vocabBorder}`, borderRadius: "10px", padding: "10px 14px", marginTop: "4px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
                     {vocab.map((v, i) => (
-                      <span key={i} style={{ fontSize: "11px", color: t.vocabText }}>
+                      <span key={i} style={{ fontSize: "14px", color: t.vocabText }}>
                         <strong>{v.cz}</strong> = {v.en}
                       </span>
                     ))}
@@ -777,7 +733,7 @@ export default function App() {
           {!isExam && !quizRevealed && (
             <div style={{ textAlign: "right", marginBottom: "6px" }}>
               <button onClick={() => setShowHint(!showHint)}
-                style={{ ...s.backBtn, fontSize: "11px", color: t.hintText }}>
+                style={{ ...s.backBtn, fontSize: "14px", color: t.hintText }}>
                 {showHint ? "Hide hint" : "💡 Hint"}
               </button>
             </div>
@@ -797,7 +753,7 @@ export default function App() {
                 <button key={i} onClick={() => handleQuizAnswer(opt)} disabled={quizRevealed} style={{
                   background: bg, border, color, borderRadius: "10px", padding: "12px 16px",
                   textAlign: "left", cursor: quizRevealed ? "default" : "pointer",
-                  fontSize: "clamp(13px, 1.8vw, 15px)", transition: "all 0.2s", lineHeight: 1.4,
+                  fontSize: "clamp(15px, 2vw, 17px)", transition: "all 0.2s", lineHeight: 1.5,
                 }}>
                   <span style={{ opacity: 0.4, marginRight: "8px" }}>{String.fromCharCode(65 + i)})</span>
                   {opt}
@@ -818,7 +774,7 @@ export default function App() {
               <div style={{ fontWeight: 700, color: isCorrect ? t.successText : t.errorText, marginBottom: "2px", fontSize: "14px" }}>
                 {isCorrect ? "✓ Correct!" : "✗ Incorrect"}
               </div>
-              {!isCorrect && <div style={{ color: t.text, fontSize: "13px" }}>Correct: <strong>{currentQuiz.correct}</strong></div>}
+              {!isCorrect && <div style={{ color: t.text, fontSize: "15px" }}>Correct: <strong>{currentQuiz.correct}</strong></div>}
             </div>
           )}
 
@@ -857,10 +813,10 @@ export default function App() {
 
           {isExam && (
             <div style={{ background: t.card, borderRadius: "14px", padding: "16px", marginBottom: "20px", border: `1px solid ${t.cardBorder}` }}>
-              <div style={{ fontSize: "12px", color: t.textMuted, marginBottom: "8px" }}>
+              <div style={{ fontSize: "15px", color: t.textMuted, marginBottom: "8px" }}>
                 Real exam pass mark: <strong style={{ color: t.textGold }}>20/30 (67%)</strong>
               </div>
-              <div style={{ fontSize: "14px", color: passed ? t.successText : t.errorText, fontWeight: 700 }}>
+              <div style={{ fontSize: "17px", color: passed ? t.successText : t.errorText, fontWeight: 700 }}>
                 {passed ? "You would PASS the real exam!" : "You would not pass yet — review the topics below."}
               </div>
             </div>
@@ -869,14 +825,14 @@ export default function App() {
           {/* Wrong answers review */}
           {wrongOnes.length > 0 && (
             <div style={{ background: t.card, borderRadius: "14px", padding: "16px", marginBottom: "20px", border: `1px solid ${t.cardBorder}`, textAlign: "left" }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: t.errorText, marginBottom: "10px" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, color: t.errorText, marginBottom: "12px" }}>
                 Review incorrect answers ({wrongOnes.length}):
               </div>
               {wrongOnes.map((w, i) => (
-                <div key={i} style={{ marginBottom: "10px", paddingBottom: "10px", borderBottom: i < wrongOnes.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
-                  <div style={{ fontSize: "12px", color: t.text, marginBottom: "4px", lineHeight: 1.4 }}>{w.question}</div>
-                  <div style={{ fontSize: "11px", color: t.errorText }}>Your answer: {w.picked}</div>
-                  <div style={{ fontSize: "11px", color: t.successText }}>Correct: {w.answer}</div>
+                <div key={i} style={{ marginBottom: "12px", paddingBottom: "12px", borderBottom: i < wrongOnes.length - 1 ? `1px solid ${t.cardBorder}` : "none" }}>
+                  <div style={{ fontSize: "15px", color: t.text, marginBottom: "4px", lineHeight: 1.5 }}>{w.question}</div>
+                  <div style={{ fontSize: "14px", color: t.errorText }}>Your answer: {w.picked}</div>
+                  <div style={{ fontSize: "14px", color: t.successText }}>Correct: {w.answer}</div>
                 </div>
               ))}
             </div>
